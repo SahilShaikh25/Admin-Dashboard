@@ -40,3 +40,7 @@ export function getProductsByCategory(category, limit, skip, sortBy, order) {
     },
   });
 }
+
+export function getProductById(id) {
+  return api.get(`/products/${id}`);
+}

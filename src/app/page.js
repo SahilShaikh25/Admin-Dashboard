@@ -7,8 +7,11 @@ import {
   getProductsByCategory,
   searchProducts,
 } from "@/services/productApi";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const router = useRouter();
+
   const [products, setProducts] = useState([]);
   const [page, setPage] = useState(1);
   const [productLimit, setproductLimit] = useState(10);
@@ -20,6 +23,15 @@ export default function Home() {
   const [category, setCategory] = useState("");
   const [sort, setSort] = useState("");
 
+  //  restricting unauth users from accessing dashboard
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      router.push("/login");
+    }
+  }, [router]);
+
   // load categories
   useEffect(() => {
     async function loadCategories() {
@@ -29,6 +41,7 @@ export default function Home() {
     loadCategories();
   }, []);
 
+  // debouncing
   useEffect(() => {
     const timer = setTimeout(() => {
       loadProducts();
@@ -36,6 +49,7 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [page, productLimit, search, category, sort]); // we want to reload when user changes page or record's size
 
+  // main function that fetches data in dashboard
   async function loadProducts() {
     const skip = (page - 1) * productLimit; // (2 - 1) * 10 = 10 record skip therefore we get page 2
     let response;
@@ -77,7 +91,19 @@ export default function Home() {
 
   return (
     <main className="p-8">
-      <h1 className="mb-6 text-2xl font-bold text-center">Dashboard</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+
+        <button
+          onClick={() => {
+            localStorage.removeItem("token");
+            router.push("/login");
+          }}
+          className="rounded border px-4 py-2"
+        >
+          Logout
+        </button>
+      </div>
 
       <div className="flex gap-2 ">
         <input
@@ -121,6 +147,18 @@ export default function Home() {
           <option value="rating">Rating</option>
           <option value="title">Title</option>
         </select>
+
+        {/* <div className="flex justify-end w-full h-10 ">
+          <button
+            onClick={() => {
+              localStorage.removeItem("token");
+              router.push("/login");
+            }}
+            className="rounded border px-4 py-2"
+          >
+            Logout
+          </button>
+        </div> */}
       </div>
 
       <div className="flex justify-end mb-2 px-2">
@@ -150,7 +188,14 @@ export default function Home() {
                   width="60"
                 ></img>
               </td>
-              <td className="border p-3">{product.title}</td>
+              <td className="border p-3">
+                <button
+                  onClick={() => router.push(`/products/${product.id}`)}
+                  className="font-semibold underline"
+                >
+                  {product.title}
+                </button>
+              </td>
               <td className="border p-3">{product.description}</td>
               <td className="border p-3">{product.category}</td>
               <td className="border p-3">{product.price}</td>
