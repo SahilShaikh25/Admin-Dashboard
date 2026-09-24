@@ -1,5 +1,12 @@
 import api from "./axios";
 
-export function getProducts() {
-  return api.get("/products");
+// get products
+export function getProducts(limit, skip) {
+  return api.get("/products", {
+    // for limit and skiping products
+    params: {
+      limit,
+      skip,
+    },
+  });
 }

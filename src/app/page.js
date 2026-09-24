@@ -5,15 +5,24 @@ import { getProducts } from "@/services/productApi";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
+  const [page, setPage] = useState(1);
+  const [productLimit, setproductLimit] = useState(10);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     loadProducts();
-  }, []);
+    // we want to reload when user changes page or record's size
+  }, [page, productLimit]);
 
   async function loadProducts() {
-    const response = await getProducts();
-    console.log(response);
+    // (1 - 1) * 10 = 0 records skip
+    // (2 - 1) * 10 = 10 record skip therefore we get page 2
+    const skip = (page - 1) * productLimit;
+
+    const response = await getProducts(productLimit, skip);
+
     setProducts(response.data.products);
+    setTotal(response.data.total);
   }
 
   return (
@@ -48,6 +57,39 @@ export default function Home() {
           ))}
         </tbody>
       </table>
+
+      <div className="flex items-center gap-4 mt-4 justify-end">
+        <select
+          value={productLimit}
+          onChange={(e) => {
+            setproductLimit(Number(e.target.value));
+            setPage(1);
+          }}
+          className="rounded border p-2"
+        >
+          <option value={10}>10</option>
+          <option value={20}>20</option>
+          <option value={50}>50</option>
+        </select>
+
+        <button
+          onClick={() => setPage(page - 1)}
+          disabled={page === 1}
+          className="rounded border px-4 py-2 disabled:opacity-50"
+        >
+          Previous
+        </button>
+
+        <span>Page | {page}</span>
+
+        <button
+          onClick={() => setPage(page + 1)}
+          disabled={page * productLimit >= total}
+          className="rounded border px-4 py-2 disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
     </main>
   );
 }
