@@ -10,3 +10,14 @@ export function getProducts(limit, skip) {
     },
   });
 }
+
+// search products
+export function searchProducts(query, limit, skip) {
+  return api.get("/products/search", {
+    params: {
+      q: query,
+      limit,
+      skip,
+    },
+  });
+}

@@ -1,33 +1,60 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getProducts } from "@/services/productApi";
+import { getProducts, searchProducts } from "@/services/productApi";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
   const [page, setPage] = useState(1);
   const [productLimit, setproductLimit] = useState(10);
   const [total, setTotal] = useState(0);
+  const [start, setStart] = useState(1);
+  const [end, setEnd] = useState(10);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
-    loadProducts();
-    // we want to reload when user changes page or record's size
-  }, [page, productLimit]);
+    const timer = setTimeout(() => {
+      loadProducts();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [page, productLimit, search]); // we want to reload when user changes page or record's size
 
   async function loadProducts() {
-    // (1 - 1) * 10 = 0 records skip
-    // (2 - 1) * 10 = 10 record skip therefore we get page 2
-    const skip = (page - 1) * productLimit;
+    const skip = (page - 1) * productLimit; // (2 - 1) * 10 = 10 record skip therefore we get page 2
+    let response;
 
-    const response = await getProducts(productLimit, skip);
+    if (search.trim() === "") {
+      response = await getProducts(productLimit, skip);
+    } else {
+      response = await searchProducts(search, productLimit, skip);
+    }
 
-    setProducts(response.data.products);
-    setTotal(response.data.total);
+    setProducts(response.data.products); // products data
+    const total = response.data.total;
+    setTotal(total); //total number of products
+    setStart((page - 1) * productLimit + 1);
+    setEnd(Math.min(page * productLimit, total));
   }
 
   return (
     <main className="p-8">
-      <h1 className="mb-6 text-2xl font-bold">Products</h1>
+      <h1 className="mb-6 text-2xl font-bold text-center">Dashboard</h1>
+      <input
+        type="text"
+        placeholder="Search products..."
+        value={search}
+        onChange={(e) => {
+          setSearch(e.target.value);
+          setPage(1);
+        }}
+        className="mb-4 rounded border p-2 w-100"
+      />
+      <div>
+        <p>
+          showing {start} - {end} of {total}
+        </p>
+      </div>
+
       <table className="w-full border-collapse border">
         <thead>
           <tr>
@@ -59,6 +86,7 @@ export default function Home() {
       </table>
 
       <div className="flex items-center gap-4 mt-4 justify-end">
+        // product limit
         <select
           value={productLimit}
           onChange={(e) => {
@@ -71,7 +99,6 @@ export default function Home() {
           <option value={20}>20</option>
           <option value={50}>50</option>
         </select>
-
         <button
           onClick={() => setPage(page - 1)}
           disabled={page === 1}
@@ -79,9 +106,7 @@ export default function Home() {
         >
           Previous
         </button>
-
         <span>Page | {page}</span>
-
         <button
           onClick={() => setPage(page + 1)}
           disabled={page * productLimit >= total}
