@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getProducts, searchProducts } from "@/services/productApi";
+import {
+  getCategories,
+  getProducts,
+  getProductsByCategory,
+  searchProducts,
+} from "@/services/productApi";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
@@ -11,22 +16,56 @@ export default function Home() {
   const [start, setStart] = useState(1);
   const [end, setEnd] = useState(10);
   const [search, setSearch] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [category, setCategory] = useState("");
+  const [sort, setSort] = useState("");
+
+  // load categories
+  useEffect(() => {
+    async function loadCategories() {
+      const response = await getCategories();
+      setCategories(response.data);
+    }
+    loadCategories();
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       loadProducts();
     }, 500);
     return () => clearTimeout(timer);
-  }, [page, productLimit, search]); // we want to reload when user changes page or record's size
+  }, [page, productLimit, search, category, sort]); // we want to reload when user changes page or record's size
 
   async function loadProducts() {
     const skip = (page - 1) * productLimit; // (2 - 1) * 10 = 10 record skip therefore we get page 2
     let response;
 
-    if (search.trim() === "") {
-      response = await getProducts(productLimit, skip);
+    // default (no search)
+    if (search.trim() !== "") {
+      response = await getProducts(
+        productLimit,
+        skip,
+        sort,
+        sort ? "asc" : undefined,
+      );
+      // category is changed
+    } else if (category !== "") {
+      response = await getProductsByCategory(
+        category,
+        productLimit,
+        skip,
+        sort,
+        sort ? "asc" : undefined,
+      );
     } else {
-      response = await searchProducts(search, productLimit, skip);
+      //when searched a product
+      response = await searchProducts(
+        search,
+        productLimit,
+        skip,
+        sort,
+        sort ? "asc" : undefined,
+      );
     }
 
     setProducts(response.data.products); // products data
@@ -39,17 +78,52 @@ export default function Home() {
   return (
     <main className="p-8">
       <h1 className="mb-6 text-2xl font-bold text-center">Dashboard</h1>
-      <input
-        type="text"
-        placeholder="Search products..."
-        value={search}
-        onChange={(e) => {
-          setSearch(e.target.value);
-          setPage(1);
-        }}
-        className="mb-4 rounded border p-2 w-100"
-      />
-      <div>
+
+      <div className="flex gap-2 ">
+        <input
+          type="text"
+          placeholder="Search products..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          className=" my-5 rounded border p-2 w-100"
+        />
+
+        <select
+          value={category}
+          onChange={(e) => {
+            setCategory(e.target.value);
+            setPage(1);
+          }}
+          className=" bg-[rgb(11_10_9)]"
+        >
+          <option value="">All categories</option>
+
+          {categories.map((item) => (
+            <option key={item.slug} value={item.slug}>
+              {item.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={sort}
+          onChange={(e) => {
+            setSort(e.target.value);
+            setPage(1);
+          }}
+          className="bg-[rgb(11_10_9)]"
+        >
+          <option value="">Sort By</option>
+          <option value="price">Price</option>
+          <option value="rating">Rating</option>
+          <option value="title">Title</option>
+        </select>
+      </div>
+
+      <div className="flex justify-end mb-2 px-2">
         <p>
           showing {start} - {end} of {total}
         </p>
@@ -86,7 +160,6 @@ export default function Home() {
       </table>
 
       <div className="flex items-center gap-4 mt-4 justify-end">
-        // product limit
         <select
           value={productLimit}
           onChange={(e) => {
