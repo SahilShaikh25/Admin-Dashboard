@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 
-export default function ProductForm({ product, onSave, onCancel, loading }) {
+export default function ProductForm({
+  product,
+  onSave,
+  onCancel,
+  loading,
+  categories,
+}) {
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("");
@@ -11,7 +17,6 @@ export default function ProductForm({ product, onSave, onCancel, loading }) {
     if (product) {
       setTitle(product.title || "");
       setPrice(product.price || "");
-      setDescription(product.description || "");
       setCategory(product.category || "");
       setDescription(product.description || "");
     } else {
@@ -44,6 +49,7 @@ export default function ProductForm({ product, onSave, onCancel, loading }) {
 
     if (!description.trim()) {
       setError("Description is required");
+      return;
     }
 
     setError("");
@@ -84,14 +90,18 @@ export default function ProductForm({ product, onSave, onCancel, loading }) {
         </div>
 
         <div>
-          <label className="mb-1 block">Category</label>
-
-          <input
-            type="text"
+          <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             className="w-full rounded border p-2"
-          />
+          >
+            <option value="">Select a category</option>
+            {categories.map((cat) => (
+              <option key={cat.slug} value={cat.slug}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>

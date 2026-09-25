@@ -77,32 +77,50 @@ export default function ProductDetails() {
           />
         </div>
 
-        <div>
+        <div className="mt-4 space-y-2">
           <h1 className="text-3xl font-bold">{product.title}</h1>
 
           <p className="mt-2 text-gray-600">{product.description}</p>
 
           <p className="mt-4 text-2xl font-bold">${product.price}</p>
 
-          <p className="mt-2">Category: {product.category}</p>
+          <p>
+            <strong>Category:</strong> {product.category}
+          </p>
 
-          <p className="mt-2">Rating: {product.rating}</p>
+          <p>
+            <strong>Brand:</strong> {product.brand || "N/A"}
+          </p>
 
-          <p className="mt-2">Stock: {product.stock}</p>
+          <p>
+            <strong>Rating:</strong> {product.rating}
+          </p>
+
+          <p>
+            <strong>Stock:</strong> {product.stock}
+          </p>
 
           <h2 className="mt-8 text-xl font-bold">Reviews</h2>
 
-          <div className="mt-4 space-y-4">
-            {product.reviews?.map((review, index) => (
-              <div key={index} className="rounded border p-4">
-                <p className="font-semibold">{review.reviewerName}</p>
+          {product.reviews?.length > 0 ? (
+            <div className="mt-4 space-y-4">
+              {product.reviews.map((review, index) => (
+                <div key={index} className="rounded border p-4">
+                  <p className="font-semibold">{review.reviewerName}</p>
 
-                <p>Rating: {review.rating}/5</p>
+                  <p className="text-sm">Rating: {review.rating}/5</p>
 
-                <p className="mt-1">{review.comment}</p>
-              </div>
-            ))}
-          </div>
+                  <p className="mt-2">{review.comment}</p>
+
+                  <p className="mt-2 text-sm text-gray-500">
+                    {new Date(review.date).toLocaleDateString()}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-4 text-gray-500">No reviews available.</p>
+          )}
         </div>
       </div>
     </main>

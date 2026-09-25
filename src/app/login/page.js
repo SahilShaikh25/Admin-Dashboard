@@ -64,7 +64,7 @@ export default function LoginPage() {
               placeholder="Password"
             />
           </div>
-          /* display error*/
+          {/* display error*/}
           {error && <p className="text-red-600">{error}</p>}
           <button
             type="submit"

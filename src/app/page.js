@@ -17,8 +17,13 @@ export default function Home() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // handle invalid "limit" value in url
+  const allowedPageSizes = [10, 20, 50];
+  const urlLimit = Number(searchParams.get("limit"));
+  const initialLimit = allowedPageSizes.includes(urlLimit) ? urlLimit : 10;
+
   const [products, setProducts] = useState([]);
-  const [productLimit, setproductLimit] = useState(10);
+  const [productLimit, setproductLimit] = useState(initialLimit);
   const [total, setTotal] = useState(0);
   const totalPages = Math.ceil(total / productLimit);
   const [start, setStart] = useState(1);
@@ -41,6 +46,24 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  function getPaginationRange() {
+    const range = 2;
+    let start = Math.max(1, page - range);
+    let end = Math.min(totalPages, page + range);
+
+    if (end - start < 4) {
+      if (start === 1) end = Math.min(5, totalPages);
+      else start = Math.max(1, end - 4);
+    }
+
+    const pages = [];
+    if (start > 1) pages.push(1, "...");
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (end < totalPages) pages.push("...", totalPages);
+
+    return pages;
+  }
+
   function handleRetry() {
     loadProducts();
   }
@@ -57,7 +80,6 @@ export default function Home() {
 
     try {
       await deleteProduct(id);
-
       setProducts((currentProducts) =>
         currentProducts.filter((product) => product.id !== id),
       );
@@ -76,10 +98,11 @@ export default function Home() {
 
     try {
       const response = await updateProduct(editingProduct.id, product);
-
       setProducts((currentProducts) =>
-        currentProducts.map((item) =>
-          item.id === editingProduct.id ? response.data : item,
+        currentProducts.map((currentProduct) =>
+          currentProduct.id === editingProduct.id
+            ? { ...currentProduct, ...response.data }
+            : currentProduct,
         ),
       );
 
@@ -102,7 +125,6 @@ export default function Home() {
 
     try {
       const response = await addProduct(product);
-
       setProducts((currentProducts) => [response.data, ...currentProducts]);
       setShowForm(false);
     } catch (error) {
@@ -112,11 +134,23 @@ export default function Home() {
     }
   }
 
+  // handling unvalid url ?page=999
+  useEffect(() => {
+    if (totalPages > 0 && page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
+  // effect to maintain url state
   useEffect(() => {
     const params = new URLSearchParams();
 
     if (page > 1) {
       params.set("page", page);
+    }
+
+    if (productLimit !== 10) {
+      params.set("limit", productLimit);
     }
 
     if (search.trim() !== "") {
@@ -134,7 +168,7 @@ export default function Home() {
     const queryString = params.toString();
 
     router.replace(queryString ? `/?${queryString}` : "/", { scroll: false });
-  }, [page, search, category, sort, router]);
+  }, [page, productLimit, search, category, sort, router]);
 
   //  restricting unauth users from accessing dashboard
   useEffect(() => {
@@ -148,8 +182,12 @@ export default function Home() {
   // load categories
   useEffect(() => {
     async function loadCategories() {
-      const response = await getCategories();
-      setCategories(response.data);
+      try {
+        const response = await getCategories();
+        setCategories(response.data);
+      } catch (error) {
+        console.error("Failed to load categories");
+      }
     }
     loadCategories();
   }, []);
@@ -160,7 +198,7 @@ export default function Home() {
 
     const timer = setTimeout(() => {
       loadProducts(controller.signal);
-    }, 500);
+    }, 1000);
 
     return () => {
       clearTimeout(timer);
@@ -214,7 +252,7 @@ export default function Home() {
       setTotal(data.total);
 
       setStart(data.total === 0 ? 0 : (page - 1) * productLimit + 1);
-      setEnd(Math.min(page * productLimit, total));
+      setEnd(Math.min(page * productLimit, data.total));
     } catch (error) {
       if (error.name === "CanceledError") {
         return;
@@ -235,7 +273,12 @@ export default function Home() {
   return (
     <main className="p-8">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <h1
+          onClick={() => router.push("/")}
+          className="text-2xl font-bold cursor-pointer"
+        >
+          Dashboard
+        </h1>
 
         <div className="flex gap-3">
           <button
@@ -243,7 +286,7 @@ export default function Home() {
               setEditingProduct(null);
               setShowForm(true);
             }}
-            className="rounded bg-black px-4 py-2 text-white border"
+            className="rounded bg-black px-4 py-2 text-white border hover:bg-gray-700 cursor-pointer"
           >
             Add Product
           </button>
@@ -253,7 +296,7 @@ export default function Home() {
               localStorage.removeItem("token");
               router.push("/login");
             }}
-            className="rounded border px-4 py-2"
+            className="bg-black rounded border px-4 py-2 hover:bg-gray-500 cursor-pointer"
           >
             Logout
           </button>
@@ -262,6 +305,7 @@ export default function Home() {
       {showForm && (
         <ProductForm
           product={editingProduct}
+          categories={categories}
           onSave={editingProduct ? handleUpdateProduct : handleAddProduct}
           onCancel={() => {
             setShowForm(false);
@@ -280,8 +324,14 @@ export default function Home() {
             setSearch(e.target.value);
             setPage(1);
           }}
-          className=" my-5 rounded border p-2 w-100"
+          className=" my-5 rounded border p-2 w-100 cursor-pointer"
         />
+        {search.trim() !== "" && category !== "" && (
+          <p className="mb-4 text-sm text-gray-500">
+            Search is active. Category filter is ignored while searching.
+          </p>
+        )}
+
         {/* category button */}
         <select
           value={category}
@@ -289,7 +339,7 @@ export default function Home() {
             setCategory(e.target.value);
             setPage(1);
           }}
-          className=" bg-[rgb(11_10_9)]"
+          className=" bg-[rgb(11_10_9)] cursor-pointer"
         >
           <option value="">All categories</option>
 
@@ -306,7 +356,7 @@ export default function Home() {
             setSort(e.target.value);
             setPage(1);
           }}
-          className="bg-[rgb(11_10_9)]"
+          className="bg-[rgb(11_10_9)] cursor-pointer"
         >
           <option value="">Sort By</option>
           <option value="price">Price</option>
@@ -317,7 +367,7 @@ export default function Home() {
       {/* size of products being displayed */}
       <div className="flex justify-end mb-2 px-2">
         <p>
-          showing {start} - {end} of {total}
+          Showing {start} - {end} of {total}
         </p>
       </div>
       {/* loading */}
@@ -327,7 +377,10 @@ export default function Home() {
         <div className="my-6 text-center">
           <p className="mb-3 text-red-600">{error}</p>
 
-          <button onClick={handleRetry} className="rounded border px-4 py-2">
+          <button
+            onClick={handleRetry}
+            className="rounded border px-4 py-2 bg-black hover:bg-gray-700 cursor-pointer"
+          >
             Retry
           </button>
         </div>
@@ -338,64 +391,149 @@ export default function Home() {
       )}
       {/* porduct table */}
       {!loading && !error && products.length > 0 && (
-        <table className="w-full border-collapse border">
-          <thead>
-            <tr>
-              <th className="border p-3 text-left">Image</th>
-              <th className="border p-3 text-left">Name</th>
-              <th className="border p-3 text-left">Description</th>
-              <th className="border p-3 text-left">Category</th>
-              <th className="border p-3 text-left">Price</th>
-              <th className="border p-3">Actions</th>
-            </tr>
-          </thead>
+        <>
+          <div className="hidden md:block">
+            <table className="w-full border-collapse border">
+              <thead>
+                <tr>
+                  <th className="border p-3 text-left">Image</th>
+                  <th className="border p-3 text-left">Name</th>
+                  <th className="border p-3 text-left">Description</th>
+                  <th className="border p-3 text-left">Category</th>
+                  <th className="border p-3 text-left">Price</th>
+                  <th className="border p-3">Rating</th>
+                  <th className="border p-3">Stock</th>
+                  <th className="border p-3">Actions</th>
+                </tr>
+              </thead>
 
-          <tbody>
+              <tbody>
+                {products.map((product) => (
+                  <tr key={product.id} className="border">
+                    <td className="border p-3">
+                      <img
+                        src={product.thumbnail}
+                        alt={product.title}
+                        width="60"
+                      ></img>
+                    </td>
+                    <td className="border p-3">
+                      <button
+                        onClick={() => router.push(`/products/${product.id}`)}
+                        className="font-semibold cursor-pointer"
+                      >
+                        {product.title}
+                      </button>
+                    </td>
+                    <td className="border p-3">{product.description}</td>
+                    <td className="border p-3">{product.category}</td>
+                    <td className="border p-3">{product.price}</td>
+                    <td className="border p-3">{product.rating}</td>
+                    <td className="border p-3">{product.stock}</td>
+                    <td className="border p-3">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setEditingProduct(product);
+                            setShowForm(true);
+                          }}
+                          className="rounded border px-3 py-1"
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteProduct(product.id)}
+                          className="rounded border px-3 py-1"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* mobile cards */}
+          <div className="space-y-4 md:hidden">
             {products.map((product) => (
-              <tr key={product.id} className="border">
-                <td className="border p-3">
-                  <img
-                    src={product.thumbnail}
-                    alt={product.title}
-                    width="60"
-                  ></img>
-                </td>
-                <td className="border p-3">
-                  <button
-                    onClick={() => router.push(`/products/${product.id}`)}
-                    className="font-semibold underline"
-                  >
-                    {product.title}
-                  </button>
-                </td>
-                <td className="border p-3">{product.description}</td>
-                <td className="border p-3">{product.category}</td>
-                <td className="border p-3">{product.price}</td>
-                <td className="border p-3">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setEditingProduct(product);
-                        setShowForm(true);
-                      }}
-                      className="rounded border px-3 py-1"
-                    >
-                      Edit
-                    </button>
+              <div key={product.id} className="rounded-lg border p-4 shadow-sm">
+                <img
+                  src={product.thumbnail}
+                  alt={product.title}
+                  className="mb-3 h-40 w-full object-contain"
+                />
 
-                    <button
-                      onClick={() => handleDeleteProduct(product.id)}
-                      className="rounded border px-3 py-1"
-                    >
-                      Delete
-                    </button>
+                <button
+                  onClick={() => router.push(`/products/${product.id}`)}
+                  className="text-left text-lg font-bold text-blue-600"
+                >
+                  {product.title}
+                </button>
+
+                <p className="mt-2 text-sm text-gray-600 line-clamp-2">
+                  {product.description}
+                </p>
+
+                {/* Grid for product details */}
+                <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <p className="text-gray-500">Category</p>
+                    <p className="font-medium">{product.category}</p>
                   </div>
-                </td>
-              </tr>
+                  <div>
+                    <p className="text-gray-500">Price</p>
+                    <p className="font-bold text-green-600">${product.price}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Rating</p>
+                    <p className="font-medium">⭐ {product.rating}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Stock</p>
+                    <p
+                      className={`font-medium ${product.stock > 0 ? "text-green-600" : "text-red-600"}`}
+                    >
+                      {product.stock > 0 ? `${product.stock} left` : "Out"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="mt-4 flex gap-2">
+                  <button
+                    onClick={() => {
+                      setEditingProduct(product);
+                      setShowForm(true);
+                    }}
+                    className="flex-1 rounded border border-blue-500 text-blue-600 px-3 py-2 font-medium"
+                  >
+                    Edit
+                  </button>
+
+                  <button
+                    onClick={() => handleDeleteProduct(product.id)}
+                    className="flex-1 rounded border border-red-500 text-red-600 px-3 py-2 font-medium"
+                  >
+                    Delete
+                  </button>
+                </div>
+
+                {/* View Details button */}
+                <button
+                  onClick={() => router.push(`/products/${product.id}`)}
+                  className="mt-3 w-full rounded bg-blue-600 text-white px-3 py-2 font-medium"
+                >
+                  View Details
+                </button>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+        </>
       )}
+      {/* dropdown to handle records limit  */}
       <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
         <select
           value={productLimit}
@@ -403,7 +541,7 @@ export default function Home() {
             setproductLimit(Number(e.target.value));
             setPage(1);
           }}
-          className="mr-2 rounded border p-2"
+          className="bg-black mr-2 rounded border p-2 cursor-pointer"
         >
           <option value={10}>10</option>
           <option value={20}>20</option>
@@ -413,19 +551,19 @@ export default function Home() {
         <button
           onClick={() => setPage(page - 1)}
           disabled={page === 1}
-          className="rounded border px-3 py-2 disabled:opacity-50"
+          className="bg-black rounded border px-3 py-2 disabled:opacity-50 cursor-pointer"
         >
           Previous
         </button>
 
-        {Array.from({ length: totalPages }, (_, index) => index + 1).map(
-          (pageNumber) => (
+        {getPaginationRange().map((pageNumber) =>
+          pageNumber === "..." ? (
+            <span key={`${pageNumber}-${Math.random()}`}>...</span>
+          ) : (
             <button
               key={pageNumber}
+              className="cursor-pointer"
               onClick={() => setPage(pageNumber)}
-              className={`rounded border px-3 py-2 ${
-                pageNumber === page ? "font-bold underline" : ""
-              }`}
             >
               {pageNumber}
             </button>
@@ -435,7 +573,7 @@ export default function Home() {
         <button
           onClick={() => setPage(page + 1)}
           disabled={page >= totalPages}
-          className="rounded border px-3 py-2 disabled:opacity-50"
+          className="rounded border px-3 py-2 disabled:opacity-50 bg-black cursor-pointer"
         >
           Next
         </button>

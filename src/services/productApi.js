@@ -46,7 +46,7 @@ export function updateProduct(id, product) {
 
 // delete
 export function deleteProduct(id) {
-  return api.delete(`products/${id}`);
+  return api.delete(`/products/${id}`);
 }
 
 // get all categories
