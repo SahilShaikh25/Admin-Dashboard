@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Product Admin Dashboard
 
-## Getting Started
+A responsive Product Admin Dashboard built with **Next.js, React, Tailwind CSS, and Axios**, using the [DummyJSON](https://dummyjson.com/) API.
 
-First, run the development server:
+The dashboard allows an authenticated user to view, search, filter, sort, paginate, and manage products.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Features
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### Authentication
+- Login using DummyJSON authentication.
+- Protected product dashboard.
+- Logout functionality.
+- Authentication token stored in `localStorage`.
+- Axios interceptor automatically attaches the token to API requests.
+- Unauthorized (`401`) responses redirect the user to the login page.
+- Login button is disabled while authentication is in progress to prevent duplicate requests.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Product Management
+- View products in a responsive table/card layout.
+- View product details.
+- Add products.
+- Edit products.
+- Delete products with confirmation.
+- Client-side form validation.
+- Prevent duplicate Save requests while a mutation is in progress.
 
-## Learn More
+### Search, Filter & Sort
+- Product search using DummyJSON search API.
+- Debounced search input.
+- Category filtering.
+- Sort by:
+  - Price
+  - Rating
+  - Title
+- Search takes priority when both search and category are selected.
 
-To learn more about Next.js, take a look at the following resources:
+### Pagination
+- Server-side pagination using `limit` and `skip`.
+- Page sizes:
+  - 10
+  - 20
+  - 50
+- Previous/Next navigation.
+- Page number navigation.
+- Displays the current result range, for example:
+  `Showing 21 - 40 of 194`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### URL State
+Search, category, sorting, page, and page size are reflected in the URL.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+For example:
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```text
+/?page=2&limit=20&search=phone&sort=price
