@@ -12,8 +12,9 @@ import {
 } from "@/services/productApi";
 import { useRouter, useSearchParams } from "next/navigation";
 import ProductForm from "@/components/ProductForm";
+import { Suspense } from "react";
 
-export default function Home() {
+function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -579,5 +580,13 @@ export default function Home() {
         </button>
       </div>
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<p className="p-8 text-center">Loading...</p>}>
+      <HomeContent />
+    </Suspense>
   );
 }
