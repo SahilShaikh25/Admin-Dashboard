@@ -20,6 +20,9 @@ import ProductCards from "@/components/dashboard/ProductCards";
 import { Button } from "@/components/ui/button";
 import PaginationControls from "@/components/dashboard/Pagination";
 import Rows from "@/components/dashboard/RowsDropdown";
+import { WordRotate } from "@/components/ui/word-rotate";
+import LoadingSpinner from "@/components/dashboard/Spinner";
+
 
 function HomeContent() {
   const router = useRouter();
@@ -78,22 +81,10 @@ function HomeContent() {
 
   // delete function
   async function handleDeleteProduct(id) {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this product?",
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      await deleteProduct(id);
-      setProducts((currentProducts) =>
-        currentProducts.filter((product) => product.id !== id),
-      );
-    } catch (error) {
-      alert("Failed to delete product");
-    }
+    await deleteProduct(id);
+    setProducts((currentProducts) =>
+      currentProducts.filter((product) => product.id !== id),
+    ); 
   }
 
   // update function
@@ -117,7 +108,7 @@ function HomeContent() {
       setEditingProduct(null);
       setShowForm(false);
     } catch (error) {
-      alert("Failed to update product");
+      throw error;
     } finally {
       setSaving(false);
     }
@@ -281,17 +272,14 @@ function HomeContent() {
   return (
     <main className="p-8">
       <div className="mb-6 flex items-center justify-between">
-        <h1
-          onClick={() => router.push("/")}
-          className="text-2xl font-bold cursor-pointer"
-        >
-          Dashboard
-        </h1>
+
+          <WordRotate className="text-4xl font-bold text-black dark:text-white ml-10 " words={["Welcome,", "Admin"]}/>
 
         <div className="flex gap-3">
           {/* Add Product */}
           <Button
             variant="default"
+            size="custom"
             onClick={() => {
               setEditingProduct(null);
               setShowForm(true);
@@ -302,6 +290,7 @@ function HomeContent() {
 
           {/* Logout */}
           <Button
+            size="custom"
             onClick={() => {
               localStorage.removeItem("token");
               router.push("/login");
@@ -351,7 +340,8 @@ function HomeContent() {
       </div>
 
       {/* loading */}
-      {loading && <p className="my-6 text-center">Loading products...</p>}
+      {loading && <LoadingSpinner />}
+
       {/* retry */}
       {error && !loading && (
         <div className="my-6 text-center">
@@ -382,7 +372,6 @@ function HomeContent() {
             router={router}
           />
 
-          {/* mobile cards */}
           <ProductCards
             products={products}
             router={router}
@@ -390,10 +379,11 @@ function HomeContent() {
               setEditingProduct(product);
               setShowForm(true);
             }}
-            onDelete={handleDeleteProduct}
+            onDelete={handleAddProduct}
           />
         </>
       )}
+      
       {/* dropdown to handle records limit  */}
       <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
         {/* Pagination */}
@@ -409,7 +399,9 @@ function HomeContent() {
 
 export default function Home() {
   return (
-    <Suspense fallback={<p className="p-8 text-center">Loading...</p>}>
+    <Suspense fallback={<div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+          <LoadingSpinner />
+      </div>}>
       <HomeContent />
     </Suspense>
   );

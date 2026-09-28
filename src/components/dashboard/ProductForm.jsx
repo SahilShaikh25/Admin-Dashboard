@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import DeleteAlert from "./DeleteAlert";
 
 export default function ProductForm({
   product,
@@ -25,6 +26,8 @@ export default function ProductForm({
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [showError, setShowError] = useState(false);
 
   useEffect(() => {
     if (product) {
@@ -41,7 +44,7 @@ export default function ProductForm({
     setError("");
   }, [product]);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
 
     if (!title.trim()) {
@@ -61,75 +64,89 @@ export default function ProductForm({
       return;
     }
 
-    setError("");
-    onSave({
-      title: title.trim(),
-      price: Number(price),
-      category: category.trim(),
-      description: description.trim(),
-    });
+    try{
+      await onSave({
+        title: title.trim(),
+        price: Number(price),
+        category: category.trim(),
+        description: description.trim(),
+      });
+    }catch (error){
+      setErrorMessage("Failed to save product")
+      setShowError(true)
+    }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onCancel}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{product ? "Edit Product" : "Add Product"}</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onCancel}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{product ? "Edit Product" : "Add Product"}</DialogTitle>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="text-sm font-medium">Title</label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-          </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Title</label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+            </div>
 
-          <div>
-            <label className="text-sm font-medium">Price</label>
-            <Input
-              type="number"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-            />
-          </div>
+            <div>
+              <label className="text-sm font-medium">Price</label>
+              <Input
+                type="number"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+              />
+            </div>
 
-          <div>
-            <label className="text-sm font-medium">Category</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full rounded border p-2"
-            >
-              <option value="">Select a category</option>
-              {categories.map((cat) => (
-                <option key={cat.slug} value={cat.slug}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-          </div>
+            <div>
+              <label className="text-sm font-medium">Category</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full rounded border p-2"
+              >
+                <option value="">Select a category</option>
+                {categories.map((cat) => (
+                  <option key={cat.slug} value={cat.slug}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div>
-            <label className="text-sm font-medium">Description</label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-            />
-          </div>
+            <div>
+              <label className="text-sm font-medium">Description</label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={4}
+              />
+            </div>
 
-          {error && <p className="text-red-600 text-sm">{error}</p>}
+            {error && <p className="text-red-600 text-sm">{error}</p>}
 
-          <DialogFooter>
-            <Button type="submit" variant="default" disabled={loading}>
-              {loading ? "Saving..." : product ? "Update" : "Add"}
-            </Button>
-            <Button variant="destructive" onClick={onCancel}>
-              Cancel
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+            <DialogFooter>
+              <Button type="submit" variant="default" disabled={loading}>
+                {loading ? "Saving..." : product ? "Update" : "Add"}
+              </Button>
+              <Button variant="destructive" onClick={onCancel}>
+                Cancel
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <DeleteAlert
+          open={showError}
+          onConfirm={() => setShowError(false)}
+          onCancel={() => setShowError(false)}
+          isError={true}
+          errorMessage={errorMessage}
+        />
+  </>
   );
 }
 

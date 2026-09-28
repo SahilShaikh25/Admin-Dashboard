@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getProductById } from "@/services/productApi";
+import LoadingSpinner from "@/components/dashboard/Spinner";
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -40,7 +41,7 @@ export default function ProductDetails() {
 
   // dispaly loading buffer
   if (loading) {
-    return <p className="text-center  p-90 text-3xl ">Loading...</p>;
+    return <LoadingSpinner />;
   }
 
   // handling error and not found
@@ -63,7 +64,7 @@ export default function ProductDetails() {
     <main className="p-8">
       <button
         onClick={() => router.push("/")}
-        className="mb-6 rounded border px-4 py-2"
+        className="mb-6 rounded border px-4 py-2 cursor-pointer"
       >
         ← Back
       </button>

@@ -9,7 +9,7 @@ function Searchbar({
   setPage,
 }) {
   return (
-    <div className="mb-6 bg-black rounded-lg shadow-sm p-6 space-y-3">
+    <div className="mb-6 bg-white rounded-lg p-6 space-y-3">
       <div className="flex flex-col md:flex-row gap-3">
         <input
           type="text"
@@ -27,7 +27,7 @@ function Searchbar({
             setCategory(e.target.value);
             setPage(1);
           }}
-          className="rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer"
+          className="rounded-lg border border-gray-300 p-3 pr-2 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer"
         >
           <option value="">All Categories</option>
           {categories.map((item) => (
